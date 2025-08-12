@@ -1,0 +1,49 @@
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: external-elastic-se
+  namespace: qa-ccs-istio
+spec:
+  hosts:
+  - elasticsearch-qa.ci29137384.cloud.corp.net
+  location: MESH_EXTERNAL
+  ports:
+  - number: 9200
+    name: http
+    protocol: HTTP
+  resolution: DNS
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: external-elastic-dr
+  namespace: qa-ccs-istio
+spec:
+  host: elasticsearch-qa.ci29137384.cloud.corp.net
+  trafficPolicy:
+    tls:
+      mode: DISABLE
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: elastic-access
+  namespace: qa-ccs-istio
+spec:
+  parentRefs:
+  - name: ccs-ingress
+    namespace: qa-ccs-istio
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /elastic
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: "/"
+    backendRefs:
+    - name: elasticsearch-qa.ci29137384.cloud.corp.net
+      port: 9200
