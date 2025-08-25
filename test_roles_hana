@@ -1,23 +1,14 @@
 DO BEGIN
-    -- 1. Создаем временную таблицу.
-    CREATE LOCAL TEMPORARY TABLE #CHECK_LIST (SQL_COMMAND NVARCHAR(1000));
-
-    -- 2. Вставьте сюда все скопированные строки.
-    -- >>> НАЧАЛО ВСТАВКИ <<<
+    -- >>> ВСТАВЬТЕ СЮДА СКОПИРОВАННУЮ СТРОКУ <<<
 
 
-    -- >>> КОНЕЦ ВСТАВКИ <<<
-
-    -- 3. Запускаем проверку.
-    SELECT
-        T1.ROLE_NAME AS "ОТСУТСТВУЮЩАЯ РОЛЬ"
+    -- ЭТОТ КОД НЕ ТРОГАЙТЕ
+    CREATE LOCAL TEMPORARY TABLE #CHECK_LIST AS (SELECT "CMD" FROM UNNEST(:GRANTS_ARRAY) AS T("CMD"));
+    SELECT T1.ROLE_NAME AS "ОТСУТСТВУЮЩАЯ РОЛЬ"
     FROM (
-        SELECT DISTINCT SUBSTRING_REGEXPR('(?<=")(.*?)(?=")' IN SQL_COMMAND) AS ROLE_NAME
-        FROM #CHECK_LIST
+        SELECT DISTINCT SUBSTRING_REGEXPR('(?<=")(.*?)(?=")' IN CMD) AS ROLE_NAME FROM #CHECK_LIST
     ) AS T1
     LEFT JOIN "SYS"."ROLES" AS T2 ON T1.ROLE_NAME = T2.ROLE_NAME
     WHERE T2.ROLE_NAME IS NULL;
-
-    -- 4. Удаляем временную таблицу.
     DROP TABLE #CHECK_LIST;
 END;
