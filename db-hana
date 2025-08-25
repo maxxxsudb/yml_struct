@@ -1,93 +1,56 @@
-СКРИПТ 1: ЭКСПОРТ ПОЛЬЗОВАТЕЛЯ REVOLUTE
-========================================
+СКРИПТ 1: ЭКСПОРТ (на источнике)
 sql
--- ========== БЛОК 1: ЭКСПОРТ РОЛЕЙ ==========
-SELECT 'GRANT "' || ROLE_NAME || '" TO "REVOLUTE";' AS export_commands
-FROM (
-    SELECT DISTINCT ROLE_NAME 
-    FROM "PUBLIC"."EFFECTIVE_ROLES" 
-    WHERE USER_NAME = 'REVOLUTE'
+-- Копируй весь результат и сохрани в файл export_revolute.txt
+WITH user_roles AS (
+    SELECT DISTINCT ROLE_NAME FROM "PUBLIC"."EFFECTIVE_ROLES" WHERE USER_NAME = 'REVOLUTE'
+),
+user_privs AS (
+    SELECT DISTINCT PRIVILEGE, OBJECT_TYPE, SCHEMA_NAME, OBJECT_NAME, IS_GRANTABLE 
+    FROM "PUBLIC"."EFFECTIVE_PRIVILEGES" 
+    WHERE USER_NAME = 'REVOLUTE' AND GRANTEE_TYPE = 'USER'
 )
-ORDER BY ROLE_NAME;
--- ========== КОНЕЦ БЛОКА 1 ==========
+-- Создание пользователя
+SELECT 'CREATE USER "REVOLUTE" PASSWORD "ChangeMe123" NO FORCE_FIRST_PASSWORD_CHANGE;' AS commands
+UNION ALL
+-- Роли  
+SELECT 'GRANT "' || ROLE_NAME || '" TO "REVOLUTE";' FROM user_roles
+UNION ALL
+-- Системные привилегии
+SELECT 'GRANT ' || PRIVILEGE || ' TO "REVOLUTE"' || CASE WHEN IS_GRANTABLE='TRUE' THEN ' WITH ADMIN OPTION' ELSE '' END || ';'
+FROM user_privs WHERE OBJECT_TYPE = 'SYSTEM'
+UNION ALL  
+-- Схемные привилегии
+SELECT 'GRANT ' || PRIVILEGE || ' ON SCHEMA "' || SCHEMA_NAME || '" TO "REVOLUTE"' || CASE WHEN IS_GRANTABLE='TRUE' THEN ' WITH GRANT OPTION' ELSE '' END || ';'
+FROM user_privs WHERE OBJECT_TYPE = 'SCHEMA'
+UNION ALL
+-- Объектные привилегии  
+SELECT 'GRANT ' || PRIVILEGE || ' ON "' || SCHEMA_NAME || '"."' || OBJECT_NAME || '" TO "REVOLUTE"' || CASE WHEN IS_GRANTABLE='TRUE' THEN ' WITH GRANT OPTION' ELSE '' END || ';'
+FROM user_privs WHERE OBJECT_TYPE IN ('TABLE','VIEW','PROCEDURE','FUNCTION')
+ORDER BY commands;
+СКРИПТ 2: ПРОВЕРКА (на целевой системе)
 sql
--- ========== БЛОК 2: ЭКСПОРТ ПРЯМЫХ СИСТЕМНЫХ ПРИВИЛЕГИЙ ==========
-SELECT 'GRANT ' || PRIVILEGE || ' TO "REVOLUTE"' ||
-       CASE WHEN IS_GRANTABLE='TRUE' THEN ' WITH ADMIN OPTION' ELSE '' END || ';' AS export_commands
-FROM "PUBLIC"."EFFECTIVE_PRIVILEGES"
-WHERE USER_NAME = 'REVOLUTE' 
-  AND GRANTEE_TYPE = 'USER' 
-  AND OBJECT_TYPE = 'SYSTEM'
-ORDER BY PRIVILEGE;
--- ========== КОНЕЦ БЛОКА 2 ==========
-sql
--- ========== БЛОК 3: ЭКСПОРТ СХЕМНЫХ ПРИВИЛЕГИЙ ==========
-SELECT 'GRANT ' || PRIVILEGE || ' ON SCHEMA "' || SCHEMA_NAME || '" TO "REVOLUTE"' ||
-       CASE WHEN IS_GRANTABLE='TRUE' THEN ' WITH GRANT OPTION' ELSE '' END || ';' AS export_commands
-FROM "PUBLIC"."EFFECTIVE_PRIVILEGES"
-WHERE USER_NAME = 'REVOLUTE' 
-  AND GRANTEE_TYPE = 'USER' 
-  AND OBJECT_TYPE = 'SCHEMA'
-ORDER BY SCHEMA_NAME, PRIVILEGE;
--- ========== КОНЕЦ БЛОКА 3 ==========
-sql
--- ========== БЛОК 4: ЭКСПОРТ ОБЪЕКТНЫХ ПРИВИЛЕГИЙ ==========
-SELECT 'GRANT ' || PRIVILEGE || ' ON "' || SCHEMA_NAME || '"."' || OBJECT_NAME || '" TO "REVOLUTE"' ||
-       CASE WHEN IS_GRANTABLE='TRUE' THEN ' WITH GRANT OPTION' ELSE '' END || ';' AS export_commands
-FROM "PUBLIC"."EFFECTIVE_PRIVILEGES"
-WHERE USER_NAME = 'REVOLUTE' 
-  AND GRANTEE_TYPE = 'USER' 
-  AND OBJECT_TYPE IN ('TABLE', 'VIEW', 'PROCEDURE', 'FUNCTION')
-ORDER BY SCHEMA_NAME, OBJECT_NAME, PRIVILEGE;
--- ========== КОНЕЦ БЛОКА 4 ==========
-sql
--- ========== БЛОК 5: СПИСОК ИСПОЛЬЗУЕМЫХ СХЕМ ==========
-SELECT DISTINCT '"' || SCHEMA_NAME || '"' AS required_schemas
-FROM "PUBLIC"."EFFECTIVE_PRIVILEGES"
-WHERE USER_NAME = 'REVOLUTE' 
-  AND GRANTEE_TYPE = 'USER' 
-  AND SCHEMA_NAME IS NOT NULL
-ORDER BY SCHEMA_NAME;
--- ========== КОНЕЦ БЛОКА 5 ==========
-========================================
-СКРИПТ 2: ПРОВЕРКА ЦЕЛЕВОЙ СИСТЕМЫ
-========================================
-sql
--- ========== БЛОК 1: ПРОВЕРКА РОЛЕЙ ==========
--- ЗАМЕНИТЬ список ролей из результата БЛОКА 1 экспорта
-WITH required_roles AS (
-    SELECT 'MODELING' AS role_name FROM DUMMY
-    UNION ALL SELECT 'MONITORING' FROM DUMMY
-    -- ДОБАВИТЬ ВСЕ РОЛИ ИЗ ЭКСПОРТА
+-- Копируй список ролей из экспорта сюда между кавычек
+WITH exported_roles AS (
+    SELECT REGEXP_SUBSTR(grant_cmd, '"([^"]+)"', 1, 1, '', 1) AS role_name
+    FROM (
+        -- ВСТАВЬ СЮДА ВСЕ СТРОКИ GRANT "..." TO "REVOLUTE"; ИЗ ЭКСПОРТА
+        SELECT 'GRANT "MODELING" TO "REVOLUTE";' AS grant_cmd FROM DUMMY
+        UNION ALL SELECT 'GRANT "MONITORING" TO "REVOLUTE";' FROM DUMMY  
+        -- ДОБАВЬ ВСЕ ОСТАЛЬНЫЕ СТРОКИ GRANT
+    )
+    WHERE grant_cmd LIKE 'GRANT "%' 
 )
-SELECT 'MISSING ROLE: ' || rr.role_name AS missing_objects
-FROM required_roles rr
-LEFT JOIN ROLES r ON rr.role_name = r.role_name
-WHERE r.role_name IS NULL;
--- ========== КОНЕЦ БЛОКА 1 ==========
+SELECT 'MISSING ROLE: ' || er.role_name AS missing_items
+FROM exported_roles er
+LEFT JOIN ROLES r ON er.role_name = r.role_name  
+WHERE r.role_name IS NULL
+UNION ALL
+SELECT 'USER EXISTS: REVOLUTE' FROM USERS WHERE USER_NAME = 'REVOLUTE';
+СКРИПТ 3: ИМПОРТ (на целевой системе)
 sql
--- ========== БЛОК 2: ПРОВЕРКА СХЕМ ==========
--- ЗАМЕНИТЬ список схем из результата БЛОКА 5 экспорта
-WITH required_schemas AS (
-    SELECT 'DCC' AS schema_name FROM DUMMY
-    UNION ALL SELECT 'PUBLIC' FROM DUMMY
-    -- ДОБАВИТЬ ВСЕ СХЕМЫ ИЗ ЭКСПОРТА
-)
-SELECT 'MISSING SCHEMA: ' || rs.schema_name AS missing_objects
-FROM required_schemas rs
-LEFT JOIN SCHEMAS s ON rs.schema_name = s.schema_name
-WHERE s.schema_name IS NULL;
--- ========== КОНЕЦ БЛОКА 2 ==========
-sql
--- ========== БЛОК 3: ПРОВЕРКА СУЩЕСТВОВАНИЯ ПОЛЬЗОВАТЕЛЯ ==========
-SELECT 'USER ALREADY EXISTS: REVOLUTE' AS user_check
-FROM USERS 
-WHERE USER_NAME = 'REVOLUTE';
--- ========== КОНЕЦ БЛОКА 3 ==========
-========================================
-СКРИПТ 3: ИМПОРТ ПОЛЬЗОВАТЕЛЯ
-========================================
-sql
--- ========== БЛОК 1: СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ ==========
-CREATE USER "REVOLUTE" PASSWORD "ChangeMe123" NO FORCE_FIRST_PASSWORD_CHANGE;
--- ========== КОНЕЦ БЛОКА 1 ==========
+-- ВСТАВЬ СЮДА ВЕСЬ РЕЗУЛЬТАТ ИЗ СКРИПТА 1 И ВЫПОЛНИ
+-- Пример:
+-- CREATE USER "REVOLUTE" PASSWORD "ChangeMe123" NO FORCE_FIRST_PASSWORD_CHANGE;
+-- GRANT "MODELING" TO "REVOLUTE";  
+-- GRANT "MONITORING" TO "REVOLUTE";
+-- ...все остальные команды из экспорта
