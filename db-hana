@@ -1,56 +1,168 @@
-СКРИПТ 1: ЭКСПОРТ (на источнике)
-sql
--- Копируй весь результат и сохрани в файл export_revolute.txt
-WITH user_roles AS (
-    SELECT DISTINCT ROLE_NAME FROM "PUBLIC"."EFFECTIVE_ROLES" WHERE USER_NAME = 'REVOLUTE'
-),
-user_privs AS (
-    SELECT DISTINCT PRIVILEGE, OBJECT_TYPE, SCHEMA_NAME, OBJECT_NAME, IS_GRANTABLE 
-    FROM "PUBLIC"."EFFECTIVE_PRIVILEGES" 
-    WHERE USER_NAME = 'REVOLUTE' AND GRANTEE_TYPE = 'USER'
+-- ====================== НАЧАЛО ЭКСПОРТА РОЛЕЙ ======================
+SELECT 'GRANT "' || ROLE_NAME || '" TO "REVOLUTE";' AS EXPORT_SQL
+FROM (
+SELECT DISTINCT ROLE_NAME
+FROM "PUBLIC"."EFFECTIVE_ROLES"
+WHERE USER_NAME='REVOLUTE'
 )
--- Создание пользователя
-SELECT 'CREATE USER "REVOLUTE" PASSWORD "ChangeMe123" NO FORCE_FIRST_PASSWORD_CHANGE;' AS commands
-UNION ALL
--- Роли  
-SELECT 'GRANT "' || ROLE_NAME || '" TO "REVOLUTE";' FROM user_roles
-UNION ALL
--- Системные привилегии
-SELECT 'GRANT ' || PRIVILEGE || ' TO "REVOLUTE"' || CASE WHEN IS_GRANTABLE='TRUE' THEN ' WITH ADMIN OPTION' ELSE '' END || ';'
-FROM user_privs WHERE OBJECT_TYPE = 'SYSTEM'
-UNION ALL  
--- Схемные привилегии
-SELECT 'GRANT ' || PRIVILEGE || ' ON SCHEMA "' || SCHEMA_NAME || '" TO "REVOLUTE"' || CASE WHEN IS_GRANTABLE='TRUE' THEN ' WITH GRANT OPTION' ELSE '' END || ';'
-FROM user_privs WHERE OBJECT_TYPE = 'SCHEMA'
-UNION ALL
--- Объектные привилегии  
-SELECT 'GRANT ' || PRIVILEGE || ' ON "' || SCHEMA_NAME || '"."' || OBJECT_NAME || '" TO "REVOLUTE"' || CASE WHEN IS_GRANTABLE='TRUE' THEN ' WITH GRANT OPTION' ELSE '' END || ';'
-FROM user_privs WHERE OBJECT_TYPE IN ('TABLE','VIEW','PROCEDURE','FUNCTION')
-ORDER BY commands;
-СКРИПТ 2: ПРОВЕРКА (на целевой системе)
-sql
--- Копируй список ролей из экспорта сюда между кавычек
-WITH exported_roles AS (
-    SELECT REGEXP_SUBSTR(grant_cmd, '"([^"]+)"', 1, 1, '', 1) AS role_name
-    FROM (
-        -- ВСТАВЬ СЮДА ВСЕ СТРОКИ GRANT "..." TO "REVOLUTE"; ИЗ ЭКСПОРТА
-        SELECT 'GRANT "MODELING" TO "REVOLUTE";' AS grant_cmd FROM DUMMY
-        UNION ALL SELECT 'GRANT "MONITORING" TO "REVOLUTE";' FROM DUMMY  
-        -- ДОБАВЬ ВСЕ ОСТАЛЬНЫЕ СТРОКИ GRANT
-    )
-    WHERE grant_cmd LIKE 'GRANT "%' 
+ORDER BY EXPORT_SQL;
+-- ======================= КОНЕЦ ЭКСПОРТА РОЛЕЙ =======================
+
+— Экспорт схемных привилегий
+
+-- ================= НАЧАЛО ЭКСПОРТА СХЕМНЫХ ПРАВ =================
+SELECT 'GRANT ' || PRIVILEGE || ' ON SCHEMA "' || SCHEMA_NAME || '" TO "REVOLUTE"' ||
+CASE WHEN MAX(CASE WHEN IS_GRANTABLE='TRUE' THEN 1 ELSE 0 END)=1
+THEN ' WITH GRANT OPTION' ELSE '' END || ';' AS EXPORT_SQL
+FROM "PUBLIC"."EFFECTIVE_PRIVILEGES"
+WHERE USER_NAME='REVOLUTE'
+AND GRANTEE_TYPE='USER'
+AND OBJECT_TYPE='SCHEMA'
+GROUP BY PRIVILEGE, SCHEMA_NAME
+ORDER BY EXPORT_SQL;
+-- ================== КОНЕЦ ЭКСПОРТА СХЕМНЫХ ПРАВ ==================
+
+— Экспорт объектных привилегий
+
+-- ================ НАЧАЛО ЭКСПОРТА ОБЪЕКТНЫХ ПРАВ ================
+SELECT 'GRANT ' || PRIVILEGE || ' ON "' || SCHEMA_NAME || '"."' || OBJECT_NAME || '" TO "REVOLUTE"' ||
+CASE WHEN MAX(CASE WHEN IS_GRANTABLE='TRUE' THEN 1 ELSE 0 END)=1
+THEN ' WITH GRANT OPTION' ELSE '' END || ';' AS EXPORT_SQL
+FROM "PUBLIC"."EFFECTIVE_PRIVILEGES"
+WHERE USER_NAME='REVOLUTE'
+AND GRANTEE_TYPE='USER'
+AND OBJECT_TYPE IN ('TABLE','VIEW','PROCEDURE','FUNCTION','SEQUENCE','SYNONYM')
+GROUP BY PRIVILEGE, SCHEMA_NAME, OBJECT_NAME
+ORDER BY EXPORT_SQL;
+-- ================= КОНЕЦ ЭКСПОРТА ОБЪЕКТНЫХ ПРАВ =================
+
+Новая БД (цель) — проверка: вставить экспорт «как есть»
+
+— Проверка ролей: вставляется сырой вывод «Экспорт ролей»
+
+-- ===================== НАЧАЛО ПРОВЕРКИ РОЛЕЙ =====================
+DO
+BEGIN
+-- Сырые строки экспорта (вставить как есть, по одной строке INSERT на строку экспорта)
+DECLARE LOCAL TEMPORARY TABLE #EXP(CMD NVARCHAR(5000));
+-- ==== ВСТАВКА ЭКСПОРТА РОЛЕЙ (начало) ====
+-- Пример: вставьте все строки из экспорта ролей, как есть:
+-- INSERT INTO #EXP VALUES ('GRANT "MODELING" TO "REVOLUTE";');
+-- INSERT INTO #EXP VALUES ('GRANT "MONITORING" TO "REVOLUTE";');
+-- ==== ВСТАВКА ЭКСПОРТА РОЛЕЙ (конец) ====
+
+-- Извлекаем имя роли между первыми кавычками
+CREATE LOCAL TEMPORARY TABLE #ROLES(NAME NVARCHAR(5000));
+INSERT INTO #ROLES
+SELECT SUBSTRING(CMD, LOCATE('"',CMD)+1,
+LOCATE('"',CMD, LOCATE('"',CMD)+1) - LOCATE('"',CMD) - 1)
+FROM #EXP;
+
+-- Отчет о недостающих ролях
+SELECT 'MISSING ROLE: ' || R.NAME AS CHECK_RESULT
+FROM #ROLES R
+LEFT JOIN ROLES X ON X.ROLE_NAME = R.NAME
+WHERE X.ROLE_NAME IS NULL
+ORDER BY R.NAME;
+
+DROP TABLE #ROLES;
+DROP TABLE #EXP;
+END;
+-- ====================== КОНЕЦ ПРОВЕРКИ РОЛЕЙ ======================
+
+— Проверка схем: вставляется сырой вывод «Экспорт схемных прав»
+
+-- =================== НАЧАЛО ПРОВЕРКИ СХЕМ ===================
+DO
+BEGIN
+DECLARE LOCAL TEMPORARY TABLE #EXP(CMD NVARCHAR(5000));
+-- ==== ВСТАВКА ЭКСПОРТА СХЕМНЫХ ПРАВ (начало) ====
+-- Пример: вставьте все строки из экспорта схемных прав, как есть:
+-- INSERT INTO #EXP VALUES ('GRANT SELECT ON SCHEMA "DCC" TO "REVOLUTE";');
+-- ==== ВСТАВКА ЭКСПОРТА СХЕМНЫХ ПРАВ (конец) ====
+
+CREATE LOCAL TEMPORARY TABLE #SCHEMAS(NAME NVARCHAR(5000));
+INSERT INTO #SCHEMAS
+SELECT SUBSTRING(
+CMD,
+LOCATE('"', CMD, LOCATE('ON SCHEMA', CMD)) + 1,
+LOCATE('"', CMD, LOCATE('"', CMD, LOCATE('ON SCHEMA', CMD)) + 1)
+- (LOCATE('"', CMD, LOCATE('ON SCHEMA', CMD)) + 1)
 )
-SELECT 'MISSING ROLE: ' || er.role_name AS missing_items
-FROM exported_roles er
-LEFT JOIN ROLES r ON er.role_name = r.role_name  
-WHERE r.role_name IS NULL
-UNION ALL
-SELECT 'USER EXISTS: REVOLUTE' FROM USERS WHERE USER_NAME = 'REVOLUTE';
-СКРИПТ 3: ИМПОРТ (на целевой системе)
-sql
--- ВСТАВЬ СЮДА ВЕСЬ РЕЗУЛЬТАТ ИЗ СКРИПТА 1 И ВЫПОЛНИ
--- Пример:
--- CREATE USER "REVOLUTE" PASSWORD "ChangeMe123" NO FORCE_FIRST_PASSWORD_CHANGE;
--- GRANT "MODELING" TO "REVOLUTE";  
--- GRANT "MONITORING" TO "REVOLUTE";
--- ...все остальные команды из экспорта
+FROM #EXP
+WHERE POSITION('ON SCHEMA', CMD) > 0;
+
+-- Отчет + готовая команда создания схемы
+SELECT 'MISSING SCHEMA: ' || S.NAME || ' | RUN: CREATE SCHEMA "' || S.NAME || '";' AS CHECK_RESULT
+FROM (SELECT DISTINCT NAME FROM #SCHEMAS) S
+LEFT JOIN SCHEMAS X ON X.SCHEMA_NAME = S.NAME
+WHERE X.SCHEMA_NAME IS NULL
+ORDER BY S.NAME;
+
+DROP TABLE #SCHEMAS;
+DROP TABLE #EXP;
+END;
+-- ==================== КОНЕЦ ПРОВЕРКИ СХЕМ ====================
+
+— Проверка объектов: вставляется сырой вывод «Экспорт объектных прав»
+
+-- =================== НАЧАЛО ПРОВЕРКИ ОБЪЕКТОВ ===================
+DO
+BEGIN
+DECLARE LOCAL TEMPORARY TABLE #EXP(CMD NVARCHAR(5000));
+-- ==== ВСТАВКА ЭКСПОРТА ОБЪЕКТНЫХ ПРАВ (начало) ====
+-- Пример: вставьте все строки из экспорта объектных прав, как есть:
+-- INSERT INTO #EXP VALUES ('GRANT SELECT ON "DCC"."T1" TO "REVOLUTE";');
+-- ==== ВСТАВКА ЭКСПОРТА ОБЪЕКТНЫХ ПРАВ (конец) ====
+
+CREATE LOCAL TEMPORARY TABLE #OBJS(SCHEMA_NAME NVARCHAR(5000), OBJECT_NAME NVARCHAR(5000));
+INSERT INTO #OBJS
+SELECT
+SUBSTRING(CMD,
+LOCATE('"', CMD, LOCATE(' ON ', CMD)) + 1,
+LOCATE('"', CMD, LOCATE('"', CMD, LOCATE(' ON ', CMD)) + 1) - (LOCATE('"', CMD, LOCATE(' ON ', CMD)) + 1)) AS SCHEMA_NAME,
+SUBSTRING(CMD,
+LOCATE('"', CMD, LOCATE('"', CMD, LOCATE(' ON ', CMD)) + 1) + 1,
+LOCATE('"', CMD, LOCATE('"', CMD, LOCATE('"', CMD, LOCATE(' ON ', CMD)) + 1) + 1)
+- (LOCATE('"', CMD, LOCATE('"', CMD, LOCATE(' ON ', CMD)) + 1) + 1)) AS OBJECT_NAME
+FROM #EXP
+WHERE POSITION(' ON "', CMD) > 0;
+
+-- Сообщаем отсутствующие объекты (тип не угадываем — нужно вернуть/создать)
+SELECT 'MISSING OBJECT: ' || O.SCHEMA_NAME || '.' || O.OBJECT_NAME || ' — create/restore before GRANT' AS CHECK_RESULT
+FROM (SELECT DISTINCT SCHEMA_NAME, OBJECT_NAME FROM #OBJS) O
+LEFT JOIN OBJECTS X ON X.SCHEMA_NAME=O.SCHEMA_NAME AND X.OBJECT_NAME=O.OBJECT_NAME
+WHERE X.OBJECT_NAME IS NULL
+ORDER BY O.SCHEMA_NAME, O.OBJECT_NAME;
+
+DROP TABLE #OBJS;
+DROP TABLE #EXP;
+END;
+-- ==================== КОНЕЦ ПРОВЕРКИ ОБЪЕКТОВ ====================
+
+Новая БД (цель) — импорт: вставить экспорт «как есть»
+
+— Создание пользователя
+
+-- =============== НАЧАЛО СОЗДАНИЯ ПОЛЬЗОВАТЕЛЯ ===============
+-- при необходимости смените пароль
+CREATE USER "REVOLUTE" PASSWORD "ChangeMe123" NO FORCE_FIRST_PASSWORD_CHANGE;
+-- ================ КОНЕЦ СОЗДАНИЯ ПОЛЬЗОВАТЕЛЯ ================
+
+— Импорт ролей: просто вставить блок «Экспорт ролей» целиком
+
+-- ================= НАЧАЛО ИМПОРТА РОЛЕЙ =================
+-- сюда просто вставьте все строки GRANT "..." TO "REVOLUTE"; из экспорта ролей
+-- ================== КОНЕЦ ИМПОРТА РОЛЕЙ ==================
+
+— Импорт схемных привилегий: просто вставить блок «Экспорт схемных прав»
+
+-- ============== НАЧАЛО ИМПОРТА СХЕМНЫХ ПРАВ ==============
+-- сюда вставить все строки GRANT ... ON SCHEMA "..." TO "REVOLUTE"...
+-- =============== КОНЕЦ ИМПОРТА СХЕМНЫХ ПРАВ ===============
+
+— Импорт объектных привилегий: просто вставить блок «Экспорт объектных прав»
+
+-- ============== НАЧАЛО ИМПОРТА ОБЪЕКТНЫХ ПРАВ ==============
+-- сюда вставить все строки GRANT ... ON "SCHEMA"."OBJECT" TO "REVOLUTE"...
+-- =============== КОНЕЦ ИМПОРТА ОБЪЕКТНЫХ ПРАВ ===============
