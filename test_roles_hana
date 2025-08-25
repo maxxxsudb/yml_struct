@@ -1,0 +1,13 @@
+-- ПРОВЕРКА 1: Существуют ли роли?
+DO (
+    -- >>> ВСТАВЬТЕ СЮДА "Список 1" (команды для ролей) <<<
+    IN GRANTS_TABLE TABLE (CMD NVARCHAR(500)) => ?
+)
+BEGIN
+    SELECT T1.ROLE_NAME AS "ОТСУТСТВУЮЩАЯ РОЛЬ"
+    FROM (
+        SELECT DISTINCT SUBSTRING_REGEXPR('(?<=")(.*?)(?=")' IN CMD) AS ROLE_NAME FROM :GRANTS_TABLE
+    ) AS T1
+    LEFT JOIN "SYS"."ROLES" AS T2 ON T1.ROLE_NAME = T2.ROLE_NAME
+    WHERE T2.ROLE_NAME IS NULL;
+END;
