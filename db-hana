@@ -1,0 +1,93 @@
+СКРИПТ 1: ЭКСПОРТ ПОЛЬЗОВАТЕЛЯ REVOLUTE
+========================================
+sql
+-- ========== БЛОК 1: ЭКСПОРТ РОЛЕЙ ==========
+SELECT 'GRANT "' || ROLE_NAME || '" TO "REVOLUTE";' AS export_commands
+FROM (
+    SELECT DISTINCT ROLE_NAME 
+    FROM "PUBLIC"."EFFECTIVE_ROLES" 
+    WHERE USER_NAME = 'REVOLUTE'
+)
+ORDER BY ROLE_NAME;
+-- ========== КОНЕЦ БЛОКА 1 ==========
+sql
+-- ========== БЛОК 2: ЭКСПОРТ ПРЯМЫХ СИСТЕМНЫХ ПРИВИЛЕГИЙ ==========
+SELECT 'GRANT ' || PRIVILEGE || ' TO "REVOLUTE"' ||
+       CASE WHEN IS_GRANTABLE='TRUE' THEN ' WITH ADMIN OPTION' ELSE '' END || ';' AS export_commands
+FROM "PUBLIC"."EFFECTIVE_PRIVILEGES"
+WHERE USER_NAME = 'REVOLUTE' 
+  AND GRANTEE_TYPE = 'USER' 
+  AND OBJECT_TYPE = 'SYSTEM'
+ORDER BY PRIVILEGE;
+-- ========== КОНЕЦ БЛОКА 2 ==========
+sql
+-- ========== БЛОК 3: ЭКСПОРТ СХЕМНЫХ ПРИВИЛЕГИЙ ==========
+SELECT 'GRANT ' || PRIVILEGE || ' ON SCHEMA "' || SCHEMA_NAME || '" TO "REVOLUTE"' ||
+       CASE WHEN IS_GRANTABLE='TRUE' THEN ' WITH GRANT OPTION' ELSE '' END || ';' AS export_commands
+FROM "PUBLIC"."EFFECTIVE_PRIVILEGES"
+WHERE USER_NAME = 'REVOLUTE' 
+  AND GRANTEE_TYPE = 'USER' 
+  AND OBJECT_TYPE = 'SCHEMA'
+ORDER BY SCHEMA_NAME, PRIVILEGE;
+-- ========== КОНЕЦ БЛОКА 3 ==========
+sql
+-- ========== БЛОК 4: ЭКСПОРТ ОБЪЕКТНЫХ ПРИВИЛЕГИЙ ==========
+SELECT 'GRANT ' || PRIVILEGE || ' ON "' || SCHEMA_NAME || '"."' || OBJECT_NAME || '" TO "REVOLUTE"' ||
+       CASE WHEN IS_GRANTABLE='TRUE' THEN ' WITH GRANT OPTION' ELSE '' END || ';' AS export_commands
+FROM "PUBLIC"."EFFECTIVE_PRIVILEGES"
+WHERE USER_NAME = 'REVOLUTE' 
+  AND GRANTEE_TYPE = 'USER' 
+  AND OBJECT_TYPE IN ('TABLE', 'VIEW', 'PROCEDURE', 'FUNCTION')
+ORDER BY SCHEMA_NAME, OBJECT_NAME, PRIVILEGE;
+-- ========== КОНЕЦ БЛОКА 4 ==========
+sql
+-- ========== БЛОК 5: СПИСОК ИСПОЛЬЗУЕМЫХ СХЕМ ==========
+SELECT DISTINCT '"' || SCHEMA_NAME || '"' AS required_schemas
+FROM "PUBLIC"."EFFECTIVE_PRIVILEGES"
+WHERE USER_NAME = 'REVOLUTE' 
+  AND GRANTEE_TYPE = 'USER' 
+  AND SCHEMA_NAME IS NOT NULL
+ORDER BY SCHEMA_NAME;
+-- ========== КОНЕЦ БЛОКА 5 ==========
+========================================
+СКРИПТ 2: ПРОВЕРКА ЦЕЛЕВОЙ СИСТЕМЫ
+========================================
+sql
+-- ========== БЛОК 1: ПРОВЕРКА РОЛЕЙ ==========
+-- ЗАМЕНИТЬ список ролей из результата БЛОКА 1 экспорта
+WITH required_roles AS (
+    SELECT 'MODELING' AS role_name FROM DUMMY
+    UNION ALL SELECT 'MONITORING' FROM DUMMY
+    -- ДОБАВИТЬ ВСЕ РОЛИ ИЗ ЭКСПОРТА
+)
+SELECT 'MISSING ROLE: ' || rr.role_name AS missing_objects
+FROM required_roles rr
+LEFT JOIN ROLES r ON rr.role_name = r.role_name
+WHERE r.role_name IS NULL;
+-- ========== КОНЕЦ БЛОКА 1 ==========
+sql
+-- ========== БЛОК 2: ПРОВЕРКА СХЕМ ==========
+-- ЗАМЕНИТЬ список схем из результата БЛОКА 5 экспорта
+WITH required_schemas AS (
+    SELECT 'DCC' AS schema_name FROM DUMMY
+    UNION ALL SELECT 'PUBLIC' FROM DUMMY
+    -- ДОБАВИТЬ ВСЕ СХЕМЫ ИЗ ЭКСПОРТА
+)
+SELECT 'MISSING SCHEMA: ' || rs.schema_name AS missing_objects
+FROM required_schemas rs
+LEFT JOIN SCHEMAS s ON rs.schema_name = s.schema_name
+WHERE s.schema_name IS NULL;
+-- ========== КОНЕЦ БЛОКА 2 ==========
+sql
+-- ========== БЛОК 3: ПРОВЕРКА СУЩЕСТВОВАНИЯ ПОЛЬЗОВАТЕЛЯ ==========
+SELECT 'USER ALREADY EXISTS: REVOLUTE' AS user_check
+FROM USERS 
+WHERE USER_NAME = 'REVOLUTE';
+-- ========== КОНЕЦ БЛОКА 3 ==========
+========================================
+СКРИПТ 3: ИМПОРТ ПОЛЬЗОВАТЕЛЯ
+========================================
+sql
+-- ========== БЛОК 1: СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ ==========
+CREATE USER "REVOLUTE" PASSWORD "ChangeMe123" NO FORCE_FIRST_PASSWORD_CHANGE;
+-- ========== КОНЕЦ БЛОКА 1 ==========
