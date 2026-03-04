@@ -401,4 +401,172 @@
           "targets": [ { "expr": "nifi_backpressure_object_threshold{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}} {{source_name}}", "refId": "C" } ],
           "title": "Backpressure Objects",
           "type": "graph",
-          "yaxes":
+          "yaxes": [ { "format": "short", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 7, "w": 12, "x": 0, "y": 10 },
+          "id": 25,
+          "lines": true,
+          "targets": [ { "expr": "nifi_backpressure_enabled{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}} {{source_name}}", "refId": "C" } ],
+          "title": "Backpressure Enabled",
+          "type": "graph",
+          "yaxes": [ { "format": "short", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        }
+      ],
+      "title": "Backpressure",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 40 },
+      "id": 19,
+      "panels": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 4 },
+          "id": 2,
+          "lines": true,
+          "targets": [ { "expr": "nifi_amount_bytes_transferred{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}}", "refId": "A" } ],
+          "title": "Transferred Bytes",
+          "type": "graph",
+          "yaxes": [ { "format": "bytes", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 7, "w": 12, "x": 0, "y": 12 },
+          "id": 14,
+          "lines": true,
+          "targets": [ { "expr": "nifi_amount_bytes_received{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}}", "refId": "C" } ],
+          "title": "Received Bytes",
+          "type": "graph",
+          "yaxes": [ { "format": "bytes", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 7, "w": 12, "x": 12, "y": 12 },
+          "id": 12,
+          "lines": true,
+          "targets": [ { "expr": "nifi_amount_bytes_written{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}}", "refId": "C" } ],
+          "title": "Written Bytes",
+          "type": "graph",
+          "yaxes": [ { "format": "bytes", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 7, "w": 12, "x": 0, "y": 19 },
+          "id": 13,
+          "lines": true,
+          "targets": [ { "expr": "nifi_amount_bytes_sent{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}}", "refId": "C" } ],
+          "title": "Sent Bytes",
+          "type": "graph",
+          "yaxes": [ { "format": "bytes", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 7, "w": 12, "x": 12, "y": 19 },
+          "id": 11,
+          "lines": true,
+          "targets": [ { "expr": "nifi_amount_bytes_read{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}}", "refId": "B" } ],
+          "title": "Read Bytes",
+          "type": "graph",
+          "yaxes": [ { "format": "bytes", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        }
+      ],
+      "title": "Bytes",
+      "type": "row"
+    },
+    {
+      "collapsed": false,
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 41 },
+      "id": 100,
+      "panels": [],
+      "title": "System & Repositories",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "bytes", "min": 0 } },
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 42 },
+      "id": 101,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "nifi_repository_free_bytes{instance=\"$instance\",cluster=\"$cluster\",repository_name=\"flowfile\"}", "legendFormat": "Free FlowFile", "refId": "A" },
+        { "expr": "nifi_repository_capacity_bytes{instance=\"$instance\",cluster=\"$cluster\",repository_name=\"flowfile\"}", "legendFormat": "Capacity", "refId": "B" }
+      ],
+      "title": "FlowFile Repository Status",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "bytes", "min": 0 } },
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 42 },
+      "id": 102,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "nifi_repository_free_bytes{instance=\"$instance\",cluster=\"$cluster\",repository_name=\"content\"}", "legendFormat": "Free Content", "refId": "A" },
+        { "expr": "nifi_repository_capacity_bytes{instance=\"$instance\",cluster=\"$cluster\",repository_name=\"content\"}", "legendFormat": "Capacity", "refId": "B" }
+      ],
+      "title": "Content Repository Status",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 } },
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 42 },
+      "id": 103,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "nifi_os_load_average_1m{instance=\"$instance\",cluster=\"$cluster\"}", "legendFormat": "1m Load", "refId": "A" }
+      ],
+      "title": "System Load Average",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "definition": "label_values(nifi_amount_bytes_read,cluster)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "cluster",
+        "multi": false,
+        "name": "cluster",
+        "options": [],
+        "query": { "qryType": 1, "query": "label_values(nifi_amount_bytes_read,cluster)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "definition": "label_values(nifi_amount_bytes_read{cluster=\"$cluster\"},instance)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "instance",
+        "multi": false,
+        "name": "instance",
+        "options": [],
+        "query": { "qryType": 1, "query": "label_values(nifi_amount_bytes_read{cluster=\"$cluster\"},instance)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "title": "NiFi Dashboard With Cluster And Instance",
+  "uid": "ddwd6t5ij5gxsd",
+  "version": 2
+}
