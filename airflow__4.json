@@ -1,0 +1,225 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "graphTooltip": 1,
+  "title": "Apache Airflow 2.10.4 OTEL Comprehensive Dashboard",
+  "tags": ["airflow", "prometheus", "otel", "sre"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": true, "text": [ "All" ], "value": [ "$__all" ] },
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "cluster",
+        "options": [],
+        "query": "label_values(airflow_scheduler_heartbeat_total, cluster)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Section 1: Global Health & Executive Overview",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100
+    },
+    {
+      "type": "stat",
+      "title": "Scheduler Heartbeat Status",
+      "description": "Положительное значение означает, что планировщик работает. 0 означает фатальный сбой.",
+      "targets": [ { "expr": "sum(rate(airflow_scheduler_heartbeat_total{cluster=~\"$cluster\"}[3m]))", "refId": "A" } ],
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "id": 101,
+      "fieldConfig": { "defaults": { "unit": "ops", "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 0.1 } ] } } }
+    },
+    {
+      "type": "stat",
+      "title": "Triggerer Heartbeat Status",
+      "description": "Жизнеспособность асинхронного демона отложенных операторов.",
+      "targets": [ { "expr": "sum(rate(airflow_triggerer_heartbeat_total{cluster=~\"$cluster\"}[3m]))", "refId": "A" } ],
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "id": 102,
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 0.1 } ] } } }
+    },
+    {
+      "type": "stat",
+      "title": "Active DAG Import Errors",
+      "description": "Синтаксические ошибки в Python-файлах конвейеров.",
+      "targets": [ { "expr": "sum(airflow_dag_processing_import_errors{cluster=~\"$cluster\"})", "refId": "A" } ],
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "id": 103,
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] } } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Global Task Success vs Failure Rate",
+      "description": "Тенденция надежности полезной нагрузки (RED: Rate & Errors).",
+      "targets": [ 
+        { "expr": "sum(rate(airflow_ti_successes_total{cluster=~\"$cluster\"}[5m]))", "legendFormat": "Success Rate", "refId": "A" },
+        { "expr": "sum(rate(airflow_ti_failures_total{cluster=~\"$cluster\"}[5m]))", "legendFormat": "Failure Rate", "refId": "B" }
+      ],
+      "custom": { "stacking": { "group": "A", "mode": "normal" } },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 5 },
+      "id": 104,
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" } }, "overrides": [ { "matcher": { "id": "byName", "options": "Failure Rate" }, "properties": [ { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } } ] }, { "matcher": { "id": "byName", "options": "Success Rate" }, "properties": [ { "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } } ] } ] }
+    },
+    {
+      "type": "row",
+      "title": "Section 2: Scheduler & DAG Processor Performance",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 12 },
+      "id": 200
+    },
+    {
+      "type": "timeseries",
+      "title": "Scheduler Critical Section Duration",
+      "description": "Время блокирующей транзакции в БД метаданных. Рост > 500ms указывает на узкое место в БД.",
+      "targets": [ { "expr": "avg(airflow_scheduler_critical_section_duration{cluster=~\"$cluster\"})", "refId": "A" } ],
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 13 },
+      "id": 201,
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Task Schedule Delay (Top 10)",
+      "description": "Дельта между ожидаемым и фактическим стартом. Индикатор перегрузки.",
+      "targets": [ { "expr": "topk(10, avg_over_time(airflow_dagrun_schedule_delay{cluster=~\"$cluster\"}[10m])) by (dag_id)", "legendFormat": "{{dag_id}}", "refId": "A" } ],
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 13 },
+      "id": 202,
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    },
+    {
+      "type": "bargauge",
+      "title": "DAG Parsing Time",
+      "description": "Время компиляции файлов. Помогает найти тяжелый код на верхнем уровне (Top-level code).",
+      "targets": [ { "expr": "topk(10, avg(airflow_dag_processing_last_duration{cluster=~\"$cluster\"}) by (file_name))", "legendFormat": "{{file_name}}", "refId": "A" } ],
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 19 },
+      "id": 203,
+      "fieldConfig": { "defaults": { "unit": "ms" } },
+      "options": { "orientation": "horizontal", "displayMode": "basic", "sortOrder": "Descending" }
+    },
+    {
+      "type": "timeseries",
+      "title": "DAG Processing Timeouts & Stalls",
+      "description": "Критические сбои парсера. Ненулевое значение означает зависание кода DAG.",
+      "targets": [ 
+        { "expr": "sum(increase(airflow_dag_processing_processor_timeouts_total{cluster=~\"$cluster\"}[10m]))", "legendFormat": "Timeouts", "refId": "A" },
+        { "expr": "sum(increase(airflow_dag_processing_manager_stalls_total{cluster=~\"$cluster\"}[10m]))", "legendFormat": "Stalls", "refId": "B" }
+      ],
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 19 },
+      "id": 204
+    },
+    {
+      "type": "row",
+      "title": "Section 3: Executors & Pools",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 },
+      "id": 300
+    },
+    {
+      "type": "timeseries",
+      "title": "Global Executor Pipeline",
+      "description": "Баланс между очередью и выполняемыми задачами (USE: Saturation vs Utilization).",
+      "targets": [ 
+        { "expr": "sum(airflow_executor_queued_tasks{cluster=~\"$cluster\"}) by (executor_class_name)", "legendFormat": "Queued ({{executor_class_name}})", "refId": "A" },
+        { "expr": "sum(airflow_executor_running_tasks{cluster=~\"$cluster\"}) by (executor_class_name)", "legendFormat": "Running ({{executor_class_name}})", "refId": "B" }
+      ],
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 26 },
+      "id": 301
+    },
+    {
+      "type": "timeseries",
+      "title": "Executor Open Slots",
+      "description": "Доступная вычислительная емкость до достижения лимита.",
+      "targets": [ { "expr": "sum(airflow_executor_open_slots{cluster=~\"$cluster\"}) by (executor_class_name)", "legendFormat": "{{executor_class_name}}", "refId": "A" } ],
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 26 },
+      "id": 302
+    },
+    {
+      "type": "bargauge",
+      "title": "Pool Starvation",
+      "description": "Задачи, заблокированные лимитами логических пулов.",
+      "targets": [ 
+        { "expr": "sum(airflow_pool_queued_slots{cluster=~\"$cluster\"}) by (pool_name)", "legendFormat": "Queued - {{pool_name}}", "refId": "A" },
+        { "expr": "sum(airflow_pool_open_slots{cluster=~\"$cluster\"}) by (pool_name)", "legendFormat": "Open - {{pool_name}}", "refId": "B" }
+      ],
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 33 },
+      "id": 303,
+      "options": { "orientation": "horizontal", "displayMode": "basic" }
+    },
+    {
+      "type": "row",
+      "title": "Section 4: DAGs & Tasks KPIs",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 39 },
+      "id": 400
+    },
+    {
+      "type": "timeseries",
+      "title": "DAG Run Durations (Top 10 Longest)",
+      "description": "Скрытая деградация производительности конвейеров.",
+      "targets": [ { "expr": "topk(10, avg_over_time(airflow_dagrun_duration_success{cluster=~\"$cluster\"}[2h])) by (dag_id)", "legendFormat": "{{dag_id}}", "refId": "A" } ],
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 40 },
+      "id": 401,
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    },
+    {
+      "type": "barchart",
+      "title": "Top Failing Tasks",
+      "description": "Рейтинг узлов, генерирующих максимальное количество ошибок.",
+      "targets": [ { "expr": "topk(15, sum(increase(airflow_ti_failures_total{cluster=~\"$cluster\"}[1h])) by (dag_id, task_id))", "legendFormat": "{{dag_id}} - {{task_id}}", "refId": "A" } ],
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 40 },
+      "id": 402,
+      "options": { "orientation": "horizontal" }
+    },
+    {
+      "type": "timeseries",
+      "title": "Zombie Tasks Generation",
+      "description": "Сигналы аппаратных сбоев воркеров (OOM Kill, сбои сети).",
+      "targets": [ { "expr": "sum(rate(airflow_zombies_killed_total{cluster=~\"$cluster\"}[10m]))", "refId": "A" } ],
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 47 },
+      "id": 403,
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "red" } } }
+    },
+    {
+      "type": "row",
+      "title": "Section 5: Async Architecture (Triggerer)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 52 },
+      "id": 500
+    },
+    {
+      "type": "timeseries",
+      "title": "Active & Deferred Triggers",
+      "description": "Объем задач в энергосберегающем асинхронном ожидании.",
+      "targets": [ { "expr": "sum(airflow_pool_deferred_slots{cluster=~\"$cluster\"}) by (pool_name)", "legendFormat": "{{pool_name}}", "refId": "A" } ],
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 53 },
+      "id": 501
+    },
+    {
+      "type": "timeseries",
+      "title": "Main Thread Block",
+      "description": "Блокировка основного потока Triggerer. Указывает на синхронный код в асинхронном операторе.",
+      "targets": [ { "expr": "sum(rate(airflow_triggers_blocked_main_thread_total{cluster=~\"$cluster\"}[5m]))", "refId": "A" } ],
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 53 },
+      "id": 502,
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "orange" } } }
+    }
+  ]
+}
