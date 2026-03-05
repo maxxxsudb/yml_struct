@@ -1,0 +1,179 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "graphTooltip": 1,
+  "title": "Apache Airflow 2.10.4 OTEL Dashboard",
+  "tags": ["airflow", "prometheus", "otel"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "panels": [
+    {
+      "type": "row",
+      "title": "Section 1: Global Health & Executive Overview",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100
+    },
+    {
+      "type": "stat",
+      "title": "Scheduler Heartbeat Status",
+      "targets": [ { "expr": "sum(rate(airflow_scheduler_heartbeat_total[3m]))", "refId": "A" } ],
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "id": 101,
+      "fieldConfig": { "defaults": { "unit": "ops", "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 0.1 } ] } } }
+    },
+    {
+      "type": "stat",
+      "title": "Triggerer Heartbeat Status",
+      "targets": [ { "expr": "sum(rate(airflow_triggerer_heartbeat_total[3m]))", "refId": "A" } ],
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "id": 102,
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 0.1 } ] } } }
+    },
+    {
+      "type": "stat",
+      "title": "Active DAG Import Errors",
+      "targets": [ { "expr": "sum(airflow_dag_processing_import_errors)", "refId": "A" } ],
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "id": 103,
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] } } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Global Task Success vs Failure Rate",
+      "targets": [ 
+        { "expr": "sum(rate(airflow_ti_successes_total[5m]))", "legendFormat": "Success", "refId": "A" },
+        { "expr": "sum(rate(airflow_ti_failures_total[5m]))", "legendFormat": "Failures", "refId": "B" }
+      ],
+      "custom": { "stacking": { "group": "A", "mode": "normal" } },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 5 },
+      "id": 104
+    },
+    {
+      "type": "row",
+      "title": "Section 2: Scheduler & DAG Processor Performance",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 12 },
+      "id": 200
+    },
+    {
+      "type": "timeseries",
+      "title": "Scheduler Critical Section Duration",
+      "targets": [ { "expr": "avg(airflow_scheduler_critical_section_duration)", "refId": "A" } ],
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 13 },
+      "id": 201,
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Task Schedule Delay (Top 10)",
+      "targets": [ { "expr": "topk(10, avg_over_time(airflow_dagrun_schedule_delay[10m])) by (dag_id)", "legendFormat": "{{dag_id}}", "refId": "A" } ],
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 13 },
+      "id": 202,
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    },
+    {
+      "type": "bargauge",
+      "title": "DAG Parsing Time",
+      "targets": [ { "expr": "topk(10, avg(airflow_dag_processing_last_duration) by (file_name))", "legendFormat": "{{file_name}}", "refId": "A" } ],
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 19 },
+      "id": 203,
+      "fieldConfig": { "defaults": { "unit": "ms" } },
+      "options": { "orientation": "horizontal", "displayMode": "basic" }
+    },
+    {
+      "type": "timeseries",
+      "title": "DAG Processing Timeouts & Stalls",
+      "targets": [ 
+        { "expr": "sum(increase(airflow_dag_processing_processor_timeouts_total[10m]))", "legendFormat": "Timeouts", "refId": "A" },
+        { "expr": "sum(increase(airflow_dag_processing_manager_stalls_total[10m]))", "legendFormat": "Stalls", "refId": "B" }
+      ],
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 19 },
+      "id": 204
+    },
+    {
+      "type": "row",
+      "title": "Section 3: Executors & Pools",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 },
+      "id": 300
+    },
+    {
+      "type": "timeseries",
+      "title": "Global Executor Pipeline",
+      "targets": [ 
+        { "expr": "sum(airflow_executor_queued_tasks) by (executor_class_name)", "legendFormat": "Queued ({{executor_class_name}})", "refId": "A" },
+        { "expr": "sum(airflow_executor_running_tasks) by (executor_class_name)", "legendFormat": "Running ({{executor_class_name}})", "refId": "B" }
+      ],
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 26 },
+      "id": 301
+    },
+    {
+      "type": "timeseries",
+      "title": "Executor Open Slots",
+      "targets": [ { "expr": "sum(airflow_executor_open_slots) by (executor_class_name)", "legendFormat": "{{executor_class_name}}", "refId": "A" } ],
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 26 },
+      "id": 302
+    },
+    {
+      "type": "bargauge",
+      "title": "Pool Starvation",
+      "targets": [ 
+        { "expr": "sum(airflow_pool_queued_slots) by (pool_name)", "legendFormat": "Queued - {{pool_name}}", "refId": "A" },
+        { "expr": "sum(airflow_pool_open_slots) by (pool_name)", "legendFormat": "Open - {{pool_name}}", "refId": "B" }
+      ],
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 32 },
+      "id": 303,
+      "options": { "orientation": "horizontal", "displayMode": "basic" }
+    },
+    {
+      "type": "row",
+      "title": "Section 4: DAGs & Tasks KPIs",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 38 },
+      "id": 400
+    },
+    {
+      "type": "timeseries",
+      "title": "DAG Run Durations (Top 10 Longest)",
+      "targets": [ { "expr": "topk(10, avg_over_time(airflow_dagrun_duration_success[2h])) by (dag_id)", "legendFormat": "{{dag_id}}", "refId": "A" } ],
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 39 },
+      "id": 401
+    },
+    {
+      "type": "barchart",
+      "title": "Top Failing Tasks",
+      "targets": [ { "expr": "topk(15, sum(increase(airflow_ti_failures_total[1h])) by (dag_id, task_id))", "legendFormat": "{{dag_id}} - {{task_id}}", "refId": "A" } ],
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 39 },
+      "id": 402,
+      "options": { "orientation": "horizontal" }
+    },
+    {
+      "type": "timeseries",
+      "title": "Zombie Tasks Generation",
+      "targets": [ { "expr": "sum(rate(airflow_zombies_killed_total[10m]))", "refId": "A" } ],
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 45 },
+      "id": 403,
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "red" } } }
+    },
+    {
+      "type": "row",
+      "title": "Section 5: Async Architecture",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 50 },
+      "id": 500
+    },
+    {
+      "type": "timeseries",
+      "title": "Active & Deferred Triggers",
+      "targets": [ { "expr": "sum(airflow_pool_deferred_slots) by (pool_name)", "legendFormat": "{{pool_name}}", "refId": "A" } ],
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 51 },
+      "id": 501
+    },
+    {
+      "type": "timeseries",
+      "title": "Main Thread Block",
+      "targets": [ { "expr": "sum(rate(airflow_triggers_blocked_main_thread_total[5m]))", "refId": "A" } ],
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 51 },
+      "id": 502,
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "orange" } } }
+    }
+  ]
+}
