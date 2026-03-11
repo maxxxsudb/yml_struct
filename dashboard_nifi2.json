@@ -3,7 +3,7 @@
     {
       "name": "DS_PROMETHEUS",
       "label": "prometheus",
-      "description": "NiFi Dashboard With Cluster And Instance",
+      "description": "NiFi Dashboard With Cluster And Instance for NiFi 2.4",
       "type": "datasource",
       "pluginId": "prometheus",
       "pluginName": "Prometheus"
@@ -205,3 +205,382 @@
           "lines": true,
           "targets": [ { "expr": "nifi_amount_threads_active{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}}", "refId": "A" } ],
           "title": "Active Threads",
+          "type": "graph",
+          "yaxes": [ { "format": "short", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        }
+      ],
+      "title": "Threads",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 36 },
+      "id": 17,
+      "panels": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 7, "w": 12, "x": 0, "y": 2 },
+          "id": 9,
+          "lines": true,
+          "targets": [ { "expr": "nifi_amount_flowfiles_received{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}}", "refId": "A" } ],
+          "title": "Received FlowFiles",
+          "type": "graph",
+          "yaxes": [ { "format": "short", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 7, "w": 12, "x": 12, "y": 2 },
+          "id": 32,
+          "lines": true,
+          "targets": [ { "expr": "nifi_amount_flowfiles_transferred{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}}", "refId": "A" } ],
+          "title": "Transferred FlowFiles",
+          "type": "graph",
+          "yaxes": [ { "format": "short", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 7, "w": 12, "x": 0, "y": 9 },
+          "id": 10,
+          "lines": true,
+          "targets": [ { "expr": "nifi_amount_flowfiles_sent{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}}", "refId": "A" } ],
+          "title": "Sent FlowFiles",
+          "type": "graph",
+          "yaxes": [ { "format": "short", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 7, "w": 12, "x": 12, "y": 9 },
+          "id": 8,
+          "lines": true,
+          "targets": [ { "expr": "nifi_amount_flowfiles_removed{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}}", "refId": "A" } ],
+          "title": "Removed FlowFiles",
+          "type": "graph",
+          "yaxes": [ { "format": "short", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        }
+      ],
+      "title": "FlowFiles",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 37 },
+      "id": 27,
+      "panels": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 7, "w": 12, "x": 0, "y": 1 },
+          "id": 5,
+          "lines": true,
+          "targets": [ { "expr": "nifi_amount_items_input{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}} {{component_id}}", "refId": "A" } ],
+          "title": "Input Items",
+          "type": "graph",
+          "yaxes": [ { "format": "short", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 7, "w": 12, "x": 12, "y": 1 },
+          "id": 28,
+          "lines": true,
+          "targets": [ { "expr": "nifi_amount_items_output{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}} {{component_id}}", "refId": "A" } ],
+          "title": "Output Items",
+          "type": "graph",
+          "yaxes": [ { "format": "short", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 7, "w": 24, "x": 0, "y": 8 },
+          "id": 29,
+          "lines": true,
+          "targets": [ { "expr": "nifi_amount_items_queued{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}} {{component_id}}", "refId": "A" } ],
+          "title": "Queued Items",
+          "type": "graph",
+          "yaxes": [ { "format": "short", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        }
+      ],
+      "title": "Items",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 38 },
+      "id": 23,
+      "panels": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 7, "w": 12, "x": 0, "y": 2 },
+          "id": 4,
+          "lines": true,
+          "targets": [ { "expr": "nifi_size_content_input_total{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}}", "refId": "A" } ],
+          "title": "Total Input Content",
+          "type": "graph",
+          "yaxes": [ { "format": "bytes", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 7, "w": 12, "x": 12, "y": 2 },
+          "id": 6,
+          "lines": true,
+          "targets": [ { "expr": "nifi_size_content_output_total{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}}", "refId": "A" } ],
+          "title": "Total Output Content",
+          "type": "graph",
+          "yaxes": [ { "format": "bytes", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 9 },
+          "id": 7,
+          "lines": true,
+          "targets": [ { "expr": "nifi_size_content_queued_total{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}}", "refId": "A" } ],
+          "title": "Total Queued Content",
+          "type": "graph",
+          "yaxes": [ { "format": "bytes", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        }
+      ],
+      "title": "Contents",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 39 },
+      "id": 21,
+      "panels": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 7, "w": 12, "x": 0, "y": 3 },
+          "id": 15,
+          "lines": true,
+          "targets": [ { "expr": "nifi_backpressure_bytes_threshold{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}} {{source_name}}", "refId": "C" } ],
+          "title": "Backpressure Bytes",
+          "type": "graph",
+          "yaxes": [ { "format": "bytes", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 7, "w": 12, "x": 12, "y": 3 },
+          "id": 24,
+          "lines": true,
+          "targets": [ { "expr": "nifi_backpressure_object_threshold{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}} {{source_name}}", "refId": "C" } ],
+          "title": "Backpressure Objects",
+          "type": "graph",
+          "yaxes": [ { "format": "short", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 7, "w": 12, "x": 0, "y": 10 },
+          "id": 25,
+          "lines": true,
+          "targets": [ { "expr": "nifi_backpressure_enabled{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}} {{source_name}}", "refId": "C" } ],
+          "title": "Backpressure Enabled",
+          "type": "graph",
+          "yaxes": [ { "format": "short", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        }
+      ],
+      "title": "Backpressure",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 40 },
+      "id": 19,
+      "panels": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 4 },
+          "id": 2,
+          "lines": true,
+          "targets": [ { "expr": "nifi_amount_bytes_transferred{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}}", "refId": "A" } ],
+          "title": "Transferred Bytes",
+          "type": "graph",
+          "yaxes": [ { "format": "bytes", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 7, "w": 12, "x": 0, "y": 12 },
+          "id": 14,
+          "lines": true,
+          "targets": [ { "expr": "nifi_amount_bytes_received{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}}", "refId": "C" } ],
+          "title": "Received Bytes",
+          "type": "graph",
+          "yaxes": [ { "format": "bytes", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 7, "w": 12, "x": 12, "y": 12 },
+          "id": 12,
+          "lines": true,
+          "targets": [ { "expr": "nifi_amount_bytes_written{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}}", "refId": "C" } ],
+          "title": "Written Bytes",
+          "type": "graph",
+          "yaxes": [ { "format": "bytes", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 7, "w": 12, "x": 0, "y": 19 },
+          "id": 13,
+          "lines": true,
+          "targets": [ { "expr": "nifi_amount_bytes_sent{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}}", "refId": "C" } ],
+          "title": "Sent Bytes",
+          "type": "graph",
+          "yaxes": [ { "format": "bytes", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 7, "w": 12, "x": 12, "y": 19 },
+          "id": 11,
+          "lines": true,
+          "targets": [ { "expr": "nifi_amount_bytes_read{instance=\"$instance\",cluster=\"$cluster\"}", "format": "time_series", "legendFormat": "{{component_type}} {{component_name}}", "refId": "B" } ],
+          "title": "Read Bytes",
+          "type": "graph",
+          "yaxes": [ { "format": "bytes", "logBase": 1, "show": true }, { "format": "short", "logBase": 1, "show": true } ]
+        }
+      ],
+      "title": "Bytes",
+      "type": "row"
+    },
+    {
+      "collapsed": false,
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 41 },
+      "id": 100,
+      "panels": [],
+      "title": "System & Repositories",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "bytes", "min": 0 } },
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 42 },
+      "id": 101,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "nifi_flowfile_repo_free_space_bytes{instance=\"$instance\",cluster=\"$cluster\"}", "legendFormat": "Free Space", "refId": "A" },
+        { "expr": "nifi_flowfile_repo_used_space_bytes{instance=\"$instance\",cluster=\"$cluster\"}", "legendFormat": "Used Space", "refId": "C" },
+        { "expr": "nifi_flowfile_repo_total_space_bytes{instance=\"$instance\",cluster=\"$cluster\"}", "legendFormat": "Total Capacity", "refId": "B" }
+      ],
+      "title": "FlowFile Repository Status",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "bytes", "min": 0 } },
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 42 },
+      "id": 102,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "nifi_content_repo_free_space_bytes{instance=\"$instance\",cluster=\"$cluster\"}", "legendFormat": "Free Space", "refId": "A" },
+        { "expr": "nifi_content_repo_used_space_bytes{instance=\"$instance\",cluster=\"$cluster\"}", "legendFormat": "Used Space", "refId": "C" },
+        { "expr": "nifi_content_repo_total_space_bytes{instance=\"$instance\",cluster=\"$cluster\"}", "legendFormat": "Total Capacity", "refId": "B" }
+      ],
+      "title": "Content Repository Status",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "bytes", "min": 0 } },
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 42 },
+      "id": 104,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "nifi_provenance_repo_free_space_bytes{instance=\"$instance\",cluster=\"$cluster\"}", "legendFormat": "Free Space", "refId": "A" },
+        { "expr": "nifi_provenance_repo_used_space_bytes{instance=\"$instance\",cluster=\"$cluster\"}", "legendFormat": "Used Space", "refId": "C" },
+        { "expr": "nifi_provenance_repo_total_space_bytes{instance=\"$instance\",cluster=\"$cluster\"}", "legendFormat": "Total Capacity", "refId": "B" }
+      ],
+      "title": "Provenance Repository Status",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 49 },
+      "id": 200,
+      "panels": [],
+      "title": "Processing Performance",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "ns", "min": 0 } },
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 50 },
+      "id": 201,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "rate(nifi_processing_performance_cpu_duration{instance=\"$instance\",cluster=\"$cluster\"}[5m])", "legendFormat": "CPU Duration Rate", "refId": "A" }
+      ],
+      "title": "Processing CPU Duration",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "ns", "min": 0 } },
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 50 },
+      "id": 202,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "rate(gc__duration{instance=\"$instance\",cluster=\"$cluster\"}[5m])", "legendFormat": "GC Duration Rate", "refId": "A" }
+      ],
+      "title": "GC Duration",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "ns", "min": 0 } },
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 50 },
+      "id": 203,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "rate(session_commit_duration{instance=\"$instance\",cluster=\"$cluster\"}[5m])", "legendFormat": "Session Commit Rate", "refId": "A" }
+      ],
+      "title": "Session Commit Duration",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "definition": "label_values(nifi_amount_bytes_read,cluster)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "cluster",
+        "multi": false,
+        "name": "cluster",
+        "options": [],
+        "query": { "qryType": 1, "query": "label_values(nifi_amount_bytes_read,cluster)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "definition": "label_values(nifi_amount_bytes_read{cluster=\"$cluster\"},instance)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "instance",
+        "multi": false,
+        "name": "instance",
+        "options": [],
+        "query": { "qryType": 1, "query": "label_values(nifi_amount_bytes_read{cluster=\"$cluster\"},instance)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "title": "NiFi Dashboard With Cluster And Instance",
+  "uid": "ddwd6t5ij5gxsd",
+  "version": 3
+}
