@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jmeter-shared-results
+spec:
+  accessModes:
+    - ReadWriteMany # Вот это ключевая строчка!
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 10Gi # Выделим 10 гигов под все отчеты
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: jmeter-run- # Кубер сам подставит случайные символы в конец
+spec:
+  ttlSecondsAfterFinished: 300 # Удалить джобу через 5 минут после завершения (оставит только логи на диске)
+  template:
+    spec:
+      containers:
+      - name: jmeter-client
+        image: alpine/jmeter:latest
+        command: ["/bin/sh", "-c"]
+        # Сначала создаем папку с уникальным именем пода, потом запускаем тест туда
+        args:
+          - >
+            mkdir -p /results/$HOSTNAME &&
+            jmeter -n -t /tests/Test.jmx -l /results/$HOSTNAME/results.jtl -e -o /results/$HOSTNAME/report
+        volumeMounts:
+        - name: tests-volume
+          mountPath: /tests
+        - name: shared-results
+          mountPath: /results
+      restartPolicy: Never
+      volumes:
+      - name: tests-volume
+        configMap:
+          name: jmeter-test-files
+      - name: shared-results
+        persistentVolumeClaim:
+          claimName: jmeter-shared-results # Цепляем наш общий RWX диск
