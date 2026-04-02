@@ -1,4 +1,135 @@
 apiVersion: v1
+kind: Service
+metadata:
+  name: jmeter-reports-service
+spec:
+  # type: ClusterIP применяется по умолчанию
+  selector:
+    app: jmeter-reports
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-autoindex-conf
+data:
+  default.conf: |
+    server {
+        listen       80;
+        server_name  localhost;
+        location / {
+            root   /usr/share/nginx/html;
+            autoindex on;              # Включаем листинг директорий
+            autoindex_exact_size off;  # Показываем размер файлов в Кб/Мб
+            autoindex_localtime on;    # Показываем локальное время создания
+        }
+    }
+
+---
+# Сам Nginx (работает постоянно)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jmeter-reports-viewer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jmeter-reports
+  template:
+    metadata:
+      labels:
+        app: jmeter-reports
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: reports-volume
+          mountPath: /usr/share/nginx/html 
+        - name: nginx-conf
+          mountPath: /etc/nginx/conf.d/default.conf 
+          subPath: default.conf
+      volumes:
+      - name: reports-volume
+        persistentVolumeClaim:
+          claimName: jmeter-shared-results 
+      - name: nginx-conf
+        configMap:
+          name: nginx-autoindex-conf
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jmeter-test-files
+data:
+  Test.jmx: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.5">
+      <hashTree>
+        <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Simple Ping Test" enabled="true">
+          <stringProp name="TestPlan.comments"></stringProp>
+          <boolProp name="TestPlan.functional_mode">false</boolProp>
+          <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
+          <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
+          <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="TestPlan.user_define_classpath"></stringProp>
+        </TestPlan>
+        <hashTree>
+          <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Thread Group" enabled="true">
+            <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+            <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
+              <boolProp name="LoopController.continue_forever">false</boolProp>
+              <stringProp name="LoopController.loops">1</stringProp>
+            </elementProp>
+            <stringProp name="ThreadGroup.num_threads">1</stringProp>
+            <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+            <boolProp name="ThreadGroup.scheduler">false</boolProp>
+            <stringProp name="ThreadGroup.duration"></stringProp>
+            <stringProp name="ThreadGroup.delay"></stringProp>
+            <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+          </ThreadGroup>
+          <hashTree>
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP Request" enabled="true">
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+                <collectionProp name="Arguments.arguments"/>
+              </elementProp>
+              <stringProp name="HTTPSampler.domain">example.com</stringProp>
+              <stringProp name="HTTPSampler.port"></stringProp>
+              <stringProp name="HTTPSampler.protocol">http</stringProp>
+              <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+              <stringProp name="HTTPSampler.path">/</stringProp>
+              <stringProp name="HTTPSampler.method">GET</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+              <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+              <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+            </HTTPSamplerProxy>
+            <hashTree>
+              <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Check 200 OK" enabled="true">
+                <collectionProp name="Asserion.test_strings">
+                  <stringProp name="49586">200</stringProp>
+                </collectionProp>
+                <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
+                <boolProp name="Assertion.assume_success">false</boolProp>
+                <intProp name="Assertion.test_type">8</intProp>
+                <stringProp name="Assertion.custom_message"></stringProp>
+              </ResponseAssertion>
+            </hashTree>
+          </hashTree>
+        </hashTree>
+      </hashTree>
+    </jmeterTestPlan>
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: jmeter-shared-results
