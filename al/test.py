@@ -16,3 +16,4 @@ print("Успех!")
   "endpoint_url": "https://minio.example.local",
   "region_name": "us-east-1"
 }
+AIRFLOW__LOGGING__DELETE_LOCAL_LOGS=True
