@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jmeter-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jmeter-worker
+  template:
+    metadata:
+      labels:
+        app: jmeter-worker
+    spec:
+      containers:
+      - name: jmeter-client
+        image: alpine/jmeter:latest
+        command: ["/bin/sh", "-c"]
+        # Эта команда заставляет контейнер просто ждать вечно
+        args: 
+          - "trap : TERM INT; sleep infinity & wait"
+        volumeMounts:
+        - name: tests-volume
+          mountPath: /tests
+        - name: shared-results
+          mountPath: /results
+      volumes:
+      - name: tests-volume
+        configMap:
+          name: jmeter-test-files
+      - name: shared-results
+        persistentVolumeClaim:
+          claimName: jmeter-shared-results
