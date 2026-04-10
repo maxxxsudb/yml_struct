@@ -1,3 +1,5 @@
+jmeter -n -t /tests/my-test.jmx -Jsearch_paths=/custom-plugins -Juser.classpath=/custom-plugins -l /tests/results.jtl
+
 ---
 apiVersion: v1
 kind: Pod
