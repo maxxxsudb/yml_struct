@@ -1,0 +1,27 @@
+prometheus.scrape "minio_external" {
+  // 1. Указываем статический IP-адрес ВМ и порт MinIO (обычно 9000)
+  targets = [
+    {
+      "__address__" = "192.168.1.50:9000",
+      "job"         = "minio-external",
+      "instance"    = "minio-vm-1", // Лейбл для идентификации в Grafana
+    },
+  ]
+
+  // 2. Путь до метрик MinIO. 
+  metrics_path    = "/minio/v2/metrics/cluster"
+  scrape_interval = "15s"
+
+  // 3. Авторизация (в MinIO API v2 метрики закрыты токеном)
+  // bearer_token = "твой_bearer_токен_от_minio"
+
+  // 4. Куда отправлять метрики
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}
+
+// Пример блока отправки (если у тебя его еще нет)
+prometheus.remote_write "mimir" {
+  endpoint {
+    url = "http://mimir-gateway.monitoring.svc.cluster.local/api/v1/push"
+  }
+}
