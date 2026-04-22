@@ -1,23 +1,28 @@
 apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
-  name: nifi
-  namespace: your-namespace
+  name: nifi-dr
+  namespace: <your-namespace>
 spec:
-  host: nifi.your-namespace.svc.cluster.local  # FQDN сервиса
+  host: nifi.<your-namespace>.svc.cluster.local
   trafficPolicy:
+    tls:
+      mode: SIMPLE
+      insecureSkipVerify: true
+    
     connectionPool:
       tcp:
         maxConnections: 100
         connectTimeout: 30s
-        tcpKeepalive:
-          time: 7200s        # 2 часа
+        tcpKeepalive:              # ВАЖНО для долгих соединений
+          time: 7200s
           interval: 75s
           probes: 9
       http:
-        http1MaxPendingRequests: 1024
-        http2MaxRequests: 1024
-        maxRequestsPerConnection: 0     # Без лимита - важно!
-        maxRetries: 0
-        idleTimeout: 7200s              # 2 часа - КРИТИЧНО
-        h2UpgradePolicy: UPGRADE        # Для WebSocket
+        idleTimeout: 7200s         # 2 часа - критично
+        maxRequestsPerConnection: 0  #  0 = без лимита (лучше чем 1)
+        maxRetries: 0              #  отключить ретраи
+        h2UpgradePolicy: UPGRADE   #  для WebSocket
+    
+    outlierDetection:
+      disabled: true               # 
