@@ -1,0 +1,8 @@
+SELECT run_id, run_type, state, data_interval_start 
+FROM dag_run 
+WHERE dag_id = 'ТВОЙ_DAG_ID' 
+ORDER BY data_interval_start DESC LIMIT 5;
+
+SELECT next_dagrun, next_dagrun_data_interval_start, next_dagrun_create_after 
+FROM dag 
+WHERE dag_id = 'ТВОЙ_DAG_ID';
