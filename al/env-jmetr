@@ -1,0 +1,7 @@
+env:
+  - name: HEAP
+    value: "-Xms2g -Xmx2g"
+  - name: JVM_ARGS
+    value: "-XX:MaxMetaspaceSize=512m"
+  - name: GC_ALGO
+    value: "-XX:+UseG1GC"
