@@ -1,3 +1,4 @@
+podman exec -it opensearch-node1 bash -c "JAVA_HOME=/usr/share/opensearch/jdk /usr/share/opensearch/plugins/opensearch-security/tools/securityadmin.sh -cd /usr/share/opensearch/plugins/opensearch-security/securityconfig/ -extcon -h 127.0.0.1 -nhnv -cacert /usr/share/opensearch/config/certs/root-ca.pem -cert /usr/share/opensearch/config/certs/corp.pem -key /usr/share/opensearch/config/certs/corp-key.pem"
 podman exec -it opensearch-node1 bash -c "JAVA_HOME=/usr/share/opensearch/jdk /usr/share/opensearch/plugins/opensearch-security/tools/securityadmin.sh -cd /usr/share/opensearch/plugins/opensearch-security/securityconfig/ -icat -nhnv -cacert /usr/share/opensearch/config/certs/root-ca.pem -cert /usr/share/opensearch/config/certs/corp.pem -key /usr/share/opensearch/config/certs/corp-key.pem"
 
 curl -k -u "admin:pass," -X PUT "https://localhost:9200/_plugins/_security/api/internalusers/log-writer" \
