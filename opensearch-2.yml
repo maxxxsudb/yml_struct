@@ -1,3 +1,4 @@
+podman exec -it opensearch-node1 bash -c "exec /usr/share/opensearch/plugins/opensearch-security/tools/securityadmin.sh -cd /usr/share/opensearch/plugins/opensearch-security/securityconfig/ -h localhost -w -nhnv -cacert /usr/share/opensearch/config/certs/root-ca.pem -cert /usr/share/opensearch/config/certs/corp.pem -key /usr/share/opensearch/config/certs/corp-key.pem"
 JAVA_HOME=/usr/share/opensearch/jdk ./securityadmin.sh \
   -cd ../securityconfig/ \
   -h localhost \
