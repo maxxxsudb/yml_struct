@@ -1,0 +1,86 @@
+curl -k -u "admin:pass," -X PUT "https://localhost:9200/_plugins/_security/api/internalusers/log-writer" \
+-H "Content-Type: application/json" \
+-d '{
+  "password": "НадежныйПарольДляСервиса123!",
+  "backend_roles": ["data_access", "ingest_all"],
+  "attributes": {}
+}'
+
+
+
+curl -k -u "admin:pass" -X PUT "https://localhost:9200/_plugins/_security/api/internalusers/имя_нового_пользователя" \
+-H "Content-Type: application/json" \
+-d '{
+  "password": "Пароль_нового_пользователя",
+  "backend_roles": ["kibana_user", "readall"],
+  "attributes": {}
+}'
+
+
+version: '3'
+services:
+
+  opensearch-node1:
+    image: docker-hub.binary.lokobank.ru/opensearchproject/opensearch:latest
+    container_name: opensearch-node1
+    environment:
+      - cluster.name=opensearch-cluster
+      - node.name=opensearch-node1
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=pass
+      # Отключаем дефолтные демо-сертификаты
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+      # Включаем SSL на порту 9200 через твои файлы
+      - plugins.security.ssl.http.enabled=true
+      - plugins.security.ssl.http.pemcert_filepath=certs/corp.pem
+      - plugins.security.ssl.http.pemkey_filepath=certs/corp-key.pem
+      - plugins.security.ssl.http.pemtrustedcas_filepath=certs/root-ca.pem
+      # Включаем SSL для внутреннего транспорта узлов
+      - plugins.security.ssl.transport.enabled=true
+      - plugins.security.ssl.transport.pemcert_filepath=certs/corp.pem
+      - plugins.security.ssl.transport.pemkey_filepath=certs/corp-key.pem
+      - plugins.security.ssl.transport.pemtrustedcas_filepath=certs/root-ca.pem
+      # Прописываем DN твоего единого сертификата для роли админа и ноды
+      - plugins.security.authcz.admin_dn=CN=url1.url2.url3.ru,OU=IT,O=loko-Bank,C=RU
+      - plugins.security.nodes_dn=CN=url1.url2.url3.ru,OU=IT,O=loko-Bank,C=RU
+    volumes:
+      - opensearch-data-clean:/usr/share/opensearch/data
+      # Маппим папку с твоими тремя файлами
+      - ./certs:/usr/share/opensearch/config/certs
+    ports:
+      - 9200:9200
+      - 9600:9600
+    networks:
+      - opensearch-net
+
+  opensearch-dashboards:
+    image: docker-hub.binary.lokobank.ru/opensearchproject/opensearch-dashboards:latest
+    container_name: opensearch-dashboards
+    ports:
+      - 5601:5601
+    environment:
+      - OPENSEARCH_HOSTS=https://opensearch-node1:9200
+      - OPENSEARCH_USERNAME=kibanaserver
+      - OPENSEARCH_PASSWORD=kibanaserver
+      # Включаем HTTPS для веб-интерфейса (порт 5601)
+      - SERVER_SSL_ENABLED=true
+      - SERVER_SSL_CERTIFICATE=/usr/share/opensearch-dashboards/config/certs/corp.pem
+      - SERVER_SSL_KEY=/usr/share/opensearch-dashboards/config/certs/corp-key.pem
+      # Включаем строгую проверку сертификата базы данных
+      - OPENSEARCH_SSL_VERIFICATIONMODE=full
+      - OPENSEARCH_SSL_CERTIFICATEAUTHORITIES=/usr/share/opensearch-dashboards/config/certs/root-ca.pem
+    volumes:
+      # Маппим ту же самую папку с сертификатами сюда
+      - ./certs:/usr/share/opensearch-dashboards/config/certs
+    networks:
+      - opensearch-net
+    depends_on:
+      - opensearch-node1
+
+volumes:
+  opensearch-data-clean:
+
+networks:
+  opensearch-net:
