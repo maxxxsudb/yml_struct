@@ -1,0 +1,3 @@
+env | grep VAULT_CACERT
+echo | openssl s_client -connect 127.0.0.1:8200 -showcerts 2>/dev/null | grep -E "Issuer:|Subject:|Not"
+openssl x509 -in <ПУТЬ_ИЗ_ШАГА_1> -noout -text | grep -E "Issuer:|Subject:|Not"
