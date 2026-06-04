@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# СТРОГАЯ ВЕРСИЯ СКРИПТА
+SCRIPT_VERSION="3.4.0"
+
 # Отключаем автоконвертацию путей в Git Bash на Windows
 export MSYS_NO_PATHCONV=1
 
@@ -15,13 +18,14 @@ DIR_NEW=".new"
 OLD_TLS_CRT="$DIR_WEBHOOK/tls.crt"
 OLD_SERVER_CRT="$DIR_VAULT/server.crt"
 
-echo -e "${YELLOW}=== Генератор сертификатов (Фикс синтаксиса OpenSSL) ===${NC}"
+echo -e "${YELLOW}=== Генератор сертификатов v${SCRIPT_VERSION} ===${NC}"
 
-if [ ! -f "$OLD_TLS_CRT" ]; then echo -e "${RED}[ОШИБКА] Не найден $OLD_TLS_CRT${NC}"; exit 1; fi
-if [ ! -f "$OLD_SERVER_CRT" ]; then echo -e "${RED}[ОШИБКА] Не найден $OLD_SERVER_CRT${NC}"; exit 1; fi
+if [ ! -f "$OLD_TLS_CRT" ] || [ ! -f "$OLD_SERVER_CRT" ]; then 
+    echo -e "${RED}[ОШИБКА] Исходные файлы tls.crt или server.crt не найдены в папках!${NC}"
+    exit 1
+fi
 
 echo "Парсим старые сертификаты..."
-
 set +e 
 
 # 1. Извлекаем Issuer
@@ -33,13 +37,13 @@ else
     CA_SUBJ="$RAW_ISSUER"
 fi
 
-# 2. Парсим CN
+# 2. Извлекаем CN
 CN_VAULT=$(openssl x509 -in "$OLD_SERVER_CRT" -noout -subject 2>/dev/null | sed -n 's/.*CN[ =]*\([^,]*\).*/\1/p' | sed 's/^[ \t]*//')
 CN_WEBHOOK=$(openssl x509 -in "$OLD_TLS_CRT" -noout -subject 2>/dev/null | sed -n 's/.*CN[ =]*\([^,]*\).*/\1/p' | sed 's/^[ \t]*//')
 
-# 3. Парсим SAN
-SAN_VAULT=$(openssl x509 -in "$OLD_SERVER_CRT" -noout -text 2>/dev/null | awk '/X509v3 Subject Alternative Name/ {getline; print}' | sed 's/IP Address:/IP:/g' | sed 's/^[ \t]*//' | tr -d '\r' | tr -d '\n')
-SAN_WEBHOOK=$(openssl x509 -in "$OLD_TLS_CRT" -noout -text 2>/dev/null | awk '/X509v3 Subject Alternative Name/ {getline; print}' | sed 's/IP Address:/IP:/g' | sed 's/^[ \t]*//' | tr -d '\r' | tr -d '\n')
+# 3. Сбор SAN
+SAN_VAULT=$(openssl x509 -in "$OLD_SERVER_CRT" -noout -text 2>/dev/null | grep -E '(DNS:|IP Address:|IP:)' | sed 's/IP Address:/IP:/g' | sed 's/^[ \t]*//' | tr -d '\r' | tr '\n' ' ' | sed 's/[ \t][ \t]*/ /g' | sed 's/ $//')
+SAN_WEBHOOK=$(openssl x509 -in "$OLD_TLS_CRT" -noout -text 2>/dev/null | grep -E '(DNS:|IP Address:|IP:)' | sed 's/IP Address:/IP:/g' | sed 's/^[ \t]*//' | tr -d '\r' | tr '\n' ' ' | sed 's/[ \t][ \t]*/ /g' | sed 's/ $//')
 
 set -e
 
@@ -52,7 +56,7 @@ echo -e "${GREEN}Webhook SAN:${NC} '$SAN_WEBHOOK'"
 echo -e "----------------------------------------"
 
 if [ -z "$SAN_VAULT" ] || [ -z "$SAN_WEBHOOK" ]; then
-    echo -e "${RED}[КРИТИЧЕСКАЯ ОШИБКА] Домены (SAN) пустые. Выход.${NC}"
+    echo -e "${RED}[КРИТИЧЕСКАЯ ОШИБКА] Секция SAN пуста. Выход.${NC}"
     exit 1
 fi
 
@@ -76,8 +80,6 @@ prompt = no
 CN = $CN_VAULT
 [v3_req]
 basicConstraints = CA:FALSE
-keyUsage = digitalSignature, keyEncipherment
-extendedKeyUsage = serverAuth
 subjectAltName = $SAN_VAULT
 EOF
 
@@ -95,8 +97,6 @@ prompt = no
 CN = $CN_WEBHOOK
 [v3_req]
 basicConstraints = CA:FALSE
-keyUsage = digitalSignature, keyEncipherment
-extendedKeyUsage = serverAuth
 subjectAltName = $SAN_WEBHOOK
 EOF
 
