@@ -15,14 +15,13 @@ DIR_NEW=".new"
 OLD_TLS_CRT="$DIR_WEBHOOK/tls.crt"
 OLD_SERVER_CRT="$DIR_VAULT/server.crt"
 
-echo -e "${YELLOW}=== Генератор сертификатов (Универсальный парсер) ===${NC}"
+echo -e "${YELLOW}=== Генератор сертификатов (Фикс синтаксиса OpenSSL) ===${NC}"
 
 if [ ! -f "$OLD_TLS_CRT" ]; then echo -e "${RED}[ОШИБКА] Не найден $OLD_TLS_CRT${NC}"; exit 1; fi
 if [ ! -f "$OLD_SERVER_CRT" ]; then echo -e "${RED}[ОШИБКА] Не найден $OLD_SERVER_CRT${NC}"; exit 1; fi
 
 echo "Парсим старые сертификаты..."
 
-# Отключаем тихое убийство скрипта, чтобы видеть реальные проблемы
 set +e 
 
 # 1. Извлекаем Issuer
@@ -38,11 +37,10 @@ fi
 CN_VAULT=$(openssl x509 -in "$OLD_SERVER_CRT" -noout -subject 2>/dev/null | sed -n 's/.*CN[ =]*\([^,]*\).*/\1/p' | sed 's/^[ \t]*//')
 CN_WEBHOOK=$(openssl x509 -in "$OLD_TLS_CRT" -noout -subject 2>/dev/null | sed -n 's/.*CN[ =]*\([^,]*\).*/\1/p' | sed 's/^[ \t]*//')
 
-# 3. Парсим SAN через универсальный текстовый вывод (работает везде)
+# 3. Парсим SAN
 SAN_VAULT=$(openssl x509 -in "$OLD_SERVER_CRT" -noout -text 2>/dev/null | awk '/X509v3 Subject Alternative Name/ {getline; print}' | sed 's/IP Address:/IP:/g' | sed 's/^[ \t]*//' | tr -d '\r' | tr -d '\n')
 SAN_WEBHOOK=$(openssl x509 -in "$OLD_TLS_CRT" -noout -text 2>/dev/null | awk '/X509v3 Subject Alternative Name/ {getline; print}' | sed 's/IP Address:/IP:/g' | sed 's/^[ \t]*//' | tr -d '\r' | tr -d '\n')
 
-# Включаем строгий режим обратно для генерации файлов
 set -e
 
 echo -e "----------------------------------------"
@@ -53,9 +51,8 @@ echo -e "${GREEN}Webhook CN:${NC} '$CN_WEBHOOK'"
 echo -e "${GREEN}Webhook SAN:${NC} '$SAN_WEBHOOK'"
 echo -e "----------------------------------------"
 
-# Защита от создания кривых сертификатов
 if [ -z "$SAN_VAULT" ] || [ -z "$SAN_WEBHOOK" ]; then
-    echo -e "${RED}[КРИТИЧЕСКАЯ ОШИБКА] Домены (SAN) не извлеклись! Генерация остановлена.${NC}"
+    echo -e "${RED}[КРИТИЧЕСКАЯ ОШИБКА] Домены (SAN) пустые. Выход.${NC}"
     exit 1
 fi
 
@@ -79,7 +76,8 @@ prompt = no
 CN = $CN_VAULT
 [v3_req]
 basicConstraints = CA:FALSE
-keyUsage = nonRepudiation, digitalSignature, keyEncipherment, serverAuth
+keyUsage = digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth
 subjectAltName = $SAN_VAULT
 EOF
 
@@ -97,7 +95,8 @@ prompt = no
 CN = $CN_WEBHOOK
 [v3_req]
 basicConstraints = CA:FALSE
-keyUsage = nonRepudiation, digitalSignature, keyEncipherment, serverAuth
+keyUsage = digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth
 subjectAltName = $SAN_WEBHOOK
 EOF
 
@@ -106,5 +105,5 @@ openssl req -new -key tls.key -config webhook.cnf -out tls.csr
 openssl x509 -req -in tls.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out tls.crt -days 3650 -extfile webhook.cnf -extensions v3_req
 
 cd ..
-echo -e "${GREEN}[УСПЕХ] Все файлы собраны в .new${NC}"
+echo -e "${GREEN}[УСПЕХ] Все 6 файлов собраны в папке .new:${NC}"
 ls -1 .new
