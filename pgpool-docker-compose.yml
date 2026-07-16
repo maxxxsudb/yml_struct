@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  pgpool:
+    image: bitnami/pgpool:latest
+    container_name: grafana-pgpool
+    restart: unless-stopped
+    ports:
+      - "9999:5432"
+    environment:
+      # --- Подключение к внешней БД PostgreSQL ---
+      # Формат: "NODE_ID:IP_АДРЕС:PORT:WEIGHT:ROLE"
+      - PGPOOL_BACKEND_NODES=0:<POSTGRES_IP>:5432:1:primary
+      - PGPOOL_POSTGRES_USERNAME=grafana_user
+      - PGPOOL_POSTGRES_PASSWORD=grafana_password
+      
+      # --- Внутренняя авторизация Pgpool ---
+      - PGPOOL_ADMIN_USERNAME=admin
+      - PGPOOL_ADMIN_PASSWORD=adminpassword
+      - PGPOOL_ENABLE_LDAP=no
+      
+      # --- Настройки In-Memory Query Cache ---
+      - PGPOOL_ENABLE_MEMQCACHE=yes
+      - PGPOOL_MEMQCACHE_METHOD=shmem
+      # Общий объем памяти под кэш (128 МБ в байтах)
+      - PGPOOL_MEMQCACHE_TOTAL_SIZE=134217728 
+      # Максимальный размер одного ответа в кэше (8 МБ в байтах)
+      - PGPOOL_MEMQCACHE_MAXCACHE=8388608
+      # Время хранения кэша (5 минут в секундах)
+      - PGPOOL_MEMQCACHE_EXPIRE=300
+      # Кэшировать исключительно SELECT-запросы
+      - PGPOOL_MEMQCACHE_SELECT_ONLY=yes
