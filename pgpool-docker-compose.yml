@@ -13,6 +13,12 @@ services:
       - PGPOOL_BACKEND_NODES=0:<POSTGRES_IP>:5432:1:primary
       - PGPOOL_POSTGRES_USERNAME=grafana_user
       - PGPOOL_POSTGRES_PASSWORD=grafana_password
+      # --- Обязательные проверки Bitnami (Добавлено для исправления ошибки) ---
+      - PGPOOL_SR_CHECK_USER=grafana_user
+      - PGPOOL_SR_CHECK_PASSWORD=grafana_password
+      - PGPOOL_HEALTH_CHECK_USER=grafana_user
+      - PGPOOL_HEALTH_CHECK_PASSWORD=grafana_password
+
       
       # --- Внутренняя авторизация Pgpool ---
       - PGPOOL_ADMIN_USERNAME=admin
