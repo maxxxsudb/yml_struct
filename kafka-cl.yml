@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-check-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-check
+  template:
+    metadata:
+      labels:
+        app: kafka-check
+    spec:
+      containers:
+      - name: kafka-check
+        image: edenhill/kcat
+        command: ["sleep", "infinity"]
+        volumeMounts:
+        - name: certs
+          mountPath: /certs
+      volumes:
+      - name: certs
+        secret:
+          secretName: kafka-certs
